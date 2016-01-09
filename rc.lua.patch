@@ -90,7 +90,7 @@ https://github.com/Drauthius/awesome-sharedtags
 +    -- Set Firefox to always map on tag number 2.
      -- { rule = { class = "Firefox" },
 -    --   properties = { tag = tags[1][2] } },
-+    --   properties = { tag = tags[2] } },
++    --   properties = { tag = tags[2] } }, -- tag = tags["www"] works as well
  }
  -- }}}
  

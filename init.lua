@@ -49,7 +49,9 @@ local sharedtags = {
 -- defaults to the first layout. The `screen` value sets the starting screen
 -- for the tag and defaults to the first screen. The tags will be sorted in this
 -- order in the default taglist.
--- @treturn table A list of all created tags.
+-- @treturn table A list of all created tags. Tags are assigned numeric values
+-- corresponding to the input list, and all tags with non-numerical names are
+-- also assigned to a key with the same name.
 -- @usage local tags = sharedtags(
 --   -- "main" is the first tag starting on screen 2 with the tile layout.
 --   { name = "main", layout = awful.layout.suit.tile, screen = 2 },
@@ -57,6 +59,7 @@ local sharedtags = {
 --   { name = "www" },
 --   -- Third tag is named "3" on screen 1 with the floating layout.
 --   {})
+-- -- tags[2] and tags["www"] both refer to the same tag.
 function sharedtags.new(def)
     local tags = {}
 
@@ -66,6 +69,11 @@ function sharedtags.new(def)
             layout = t.layout,
             sharedtagindex = i
         })
+
+        -- Create an alias between the index and the name.
+        if t.name and type(t.name) ~= "number" then
+            tags[t.name] = tags[i]
+        end
 
         -- If no tag is selected for this screen, then select this one.
         if not awful.tag.selected(awful.tag.getscreen(tags[i])) then
@@ -108,7 +116,6 @@ function sharedtags.movetag(tag, screen)
                 local newtag = awful.tag.find_fallback(oldscreen)
                 if newtag then
                     awful.tag.viewonly(newtag)
-                else
                 end
             end
         else
