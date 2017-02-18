@@ -4,8 +4,9 @@ awesome-sharedtags
 A simple implementation for creating tags shared on multiple screens for
 [awesome window manager](http://awesome.naquadah.org/).
 
-It is designed to work with *awesome* version 3.5, but might work with older or
-newer versions as well.
+This branch of the library is intended to work with *awesome* version 3.5 (and
+all minor versions), but there are other branches with support for other
+versions.
 
 Features
 --------
@@ -91,7 +92,7 @@ Installation
     awful.rules.rules = {
         -- Set Firefox to always map on tag number 2.
         { rule = { class = "Firefox" },
-          properties = { tag = tags[2] } },
+          properties = { tag = tags[2] } }, -- or tags["www"] to map it to the name instead
     }
     ```
 3. Restart or reload *awesome*.
