@@ -6,20 +6,15 @@
 
 -- Grab environment we need
 local awful = require("awful")
-local capi = {
-    tag = tag,
-    screen = screen,
-    mouse = mouse
-}
 
 local sharedtags = {
-    _VERSION = "sharedtags v1.0.0",
-    _DESCRIPTION = "Share tags for awesome window manager",
+    _VERSION = "sharedtags v1.0.0 for v4.0",
+    _DESCRIPTION = "Share tags for awesome window manager v4.0",
     _URL = "https://github.com/Drauthius/awesome-sharedtags",
     _LICENSE = [[
         MIT LICENSE
 
-        Copyright (c) 2016 Albert Diserholt
+        Copyright (c) 2017 Albert Diserholt
 
         Permission is hereby granted, free of charge, to any person obtaining a
         copy of this software and associated documentation files (the "Software"),
@@ -65,7 +60,7 @@ function sharedtags.new(def)
 
     for i,t in ipairs(def) do
         tags[i] = awful.tag.add(t.name or i, {
-            screen = math.min(capi.screen.count(), t.screen or 1),
+            screen = t.screen or awful.screen.primary,
             layout = t.layout,
             sharedtagindex = i
         })
@@ -76,8 +71,8 @@ function sharedtags.new(def)
         end
 
         -- If no tag is selected for this screen, then select this one.
-        if not awful.tag.selected(awful.tag.getscreen(tags[i])) then
-            awful.tag.viewonly(tags[i]) -- Updates the history as well.
+        if not tags[i].screen.selected_tag then
+            tags[i]:view_only() -- Updates the history as well.
         end
     end
 
@@ -86,50 +81,40 @@ end
 
 --- Move the specified tag to a new screen, if necessary.
 -- @param tag The tag to move.
--- @tparam[opt=capi.mouse.screen] number screen The screen to move the tag to.
+-- @tparam[opt=awful.screen.focused()] number screen The screen to move the tag to.
 -- @treturn bool Whether the tag was moved.
 function sharedtags.movetag(tag, screen)
-    screen = screen or capi.mouse.screen
-    local oldscreen = awful.tag.getscreen(tag)
+    screen = screen or awful.screen.focused()
+    local oldscreen = tag.screen
 
     -- If the specified tag is allocated to another screen, we need to move it.
     if oldscreen ~= screen then
-        local oldsel = awful.tag.selected(oldscreen)
-
-        -- This works around a bug in the taglist module. It only receives
-        -- signals for when a tag or client changes something. Moving a tag
-        -- with no clients doesn't trigger a signal, and can thus leave the
-        -- taglist outdated. The work around is to hide the tag prior to the
-        -- move, and then restore its hidden status.
-        local hide = awful.tag.getproperty(tag, "hide")
-        awful.tag.setproperty(tag, "hide", true)
-
-        awful.tag.setscreen(tag, screen)
-
-        awful.tag.setproperty(tag, "hide", hide)
+        local oldsel = oldscreen.selected_tag
+        tag.screen = screen
 
         if oldsel == tag then
             -- The tag has been moved away. In most cases the tag history
             -- function will find the best match, but if we really want we can
             -- try to find a fallback tag as well.
-            if not awful.tag.selected(oldscreen) then
+            if not oldscreen.selected_tag then
                 local newtag = awful.tag.find_fallback(oldscreen)
                 if newtag then
-                    awful.tag.viewonly(newtag)
+                    newtag:view_only()
                 end
             end
-        else
-            -- A bit of a weird one. Moving a previously selected tag
-            -- deselects the current tag, probably because the history is
-            -- restored to the first entry. Restoring it to the previous entry
-            -- seems to work well enough.
-            awful.tag.history.restore(oldscreen, "previous")
+        --else
+            -- NOTE: A bug in awesome 4.0 is causing all tags to be deselected
+            -- here. A shame, but I haven't found a nice way to work around it
+            -- except by fixing the bug (history seems to be in a weird state).
         end
 
         -- Also sort the tag in the taglist, by reapplying the index. This is just a nicety.
-        for _,screen in ipairs({ screen, oldscreen }) do
-            for _,t in ipairs(awful.tag.gettags(screen)) do
-                awful.tag.setproperty(t, "index", awful.tag.getproperty(t, "sharedtagindex"))
+        local unpack = unpack or table.unpack
+        for _,s in ipairs({ screen, oldscreen }) do
+            local tags = { unpack(s.tags) } -- Copy
+            table.sort(tags, function(a, b) return a.sharedtagindex < b.sharedtagindex end)
+            for i,t in ipairs(tags) do
+                t.index = i
             end
         end
 
@@ -141,34 +126,32 @@ end
 
 --- View the specified tag on the specified screen.
 -- @param tag The only tag to view.
--- @tparam[opt=capi.mouse.screen] number screen The screen to view the tag on.
+-- @tparam[opt=awful.screen.focused()] number screen The screen to view the tag on.
 function sharedtags.viewonly(tag, screen)
     sharedtags.movetag(tag, screen)
-    awful.tag.viewonly(tag)
+    tag:view_only()
 end
 
 --- Toggle the specified tag on the specified screen.
 -- The tag will be selected if the screen changes, and toggled if it does not
 -- change the screen.
 -- @param tag The tag to toggle.
--- @tparam[opt=capi.mouse.screen] number screen The screen to toggle the tag on.
+-- @tparam[opt=awful.screen.focused()] number screen The screen to toggle the tag on.
 function sharedtags.viewtoggle(tag, screen)
-    local oldscreen = awful.tag.getscreen(tag)
+    local oldscreen = tag.screen
 
     if sharedtags.movetag(tag, screen) then
-        -- Always mark the tag selected if the screen moved. Just feels a lot
+        -- Always mark the tag selected if the screen changed. Just feels a lot
         -- more natural.
         tag.selected = true
         -- Update the history on the old and new screens.
-        capi.screen[oldscreen]:emit_signal("tag::history::update")
-        capi.screen[awful.tag.getscreen(tag)]:emit_signal("tag::history::update")
+        oldscreen:emit_signal("tag::history::update")
+        tag.screen:emit_signal("tag::history::update")
     else
         -- Only toggle the tag unless the screen moved.
         awful.tag.viewtoggle(tag)
     end
 end
-
-capi.tag.add_signal("property::sharedtagindex")
 
 return setmetatable(sharedtags, { __call = function(...) return sharedtags.new(select(2, ...)) end })
 

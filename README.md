@@ -4,7 +4,7 @@ awesome-sharedtags
 A simple implementation for creating tags shared on multiple screens for
 [awesome window manager](http://awesome.naquadah.org/).
 
-This branch of the library is intended to work with *awesome* version 3.5 (and
+This branch of the library is intended to work with *awesome* version 4.0 (and
 all minor versions), but there are other branches with support for other
 versions.
 
@@ -20,7 +20,7 @@ Installation
 
 1. Clone or download a zip of the repository, and put the `sharedtags`
    directory somewhere where you can easily include it, for example in the same
-   directory as your `rc.lua` file.
+   directory as your `rc.lua` file, generally located in `~/.config/awesome/`.
 2. Modify your `rc.lua` file. A [patch](rc.lua.patch) against the default
    configuration is included in the repository for easy comparison, but keep
    reading for a textual description.
@@ -30,18 +30,33 @@ Installation
     local sharedtags = require("sharedtags")
     ```
   2. Create the tags using the `sharedtags()` method, instead of the original
-     ones created with `awful.tag()`.
+     ones created with `awful.tag()`. They should be created at the file level,
+     i.e. outside of any function.
 
     ```lua
-    local tags = sharedtags(
-        { name = "main", layout = layouts[2] },
-        { name = "www", layout = awful.layout.suit.max },
-        { name = "chat", screen = 2, layout = layouts[1] },
-        { layout = layouts[2] },
-        { screen = 2, layout = layouts[2] }
-    )
+    local tags = sharedtags({
+        { name = "main", layout = awful.layout.layouts[2] },
+        { name = "www", layout = awful.layout.layouts[10] },
+        { name = "game", layout = awful.layout.layouts[1] },
+        { name = "misc", layout = awful.layout.layouts[2] },
+        { name = "chat", screen = 2, layout = awful.layout.layouts[2] },
+        { layout = awful.layout.layouts[2] },
+        { screen = 2, layout = awful.layout.layouts[2] }
+    })
     ```
-  3. The code for handling tags and clients needs to be changed to use the
+  3. Remove or uncomment the code which creates the tags when a screen is
+     connected, in the `connect_for_each_screen` callback.
+
+    ```lua
+    awful.screen.connect_for_each_screen(function(s)
+        -- Each screen has its own tag table.
+        --awful.tag({ "1", "2", "3", "4", "5", "6", "7", "8", "9" }, s, awful.layout.layouts[1])
+
+        -- Here is a good place to add tags to a newly connected screen, if desired:
+        --sharedtags.viewonly(tags[4], s)
+    end)
+    ```
+  4. The code for handling tags and clients needs to be changed to use the
      library.
 
     ```lua
@@ -50,43 +65,25 @@ Installation
             -- View tag only.
             awful.key({ modkey }, "#" .. i + 9,
                 function ()
+                    local screen = awful.screen.focused()
                     local tag = tags[i]
                     if tag then
-                        sharedtags.viewonly(tag)
+                        sharedtags.viewonly(tag, screen)
                     end
                 end),
             -- Toggle tag.
             awful.key({ modkey, "Control" }, "#" .. i + 9,
                 function ()
+                    local screen = awful.screen.focused()
                     local tag = tags[i]
                     if tag then
-                        sharedtags.viewtoggle(tag)
-                    end
-                end),
-            -- Move client to tag.
-            awful.key({ modkey, "Shift" }, "#" .. i + 9,
-                function ()
-                    if client.focus then
-                        local tag = tags[i]
-                        if tag then
-                            awful.client.movetotag(tag)
-                        end
-                    end
-                end),
-            -- Toggle tag.
-            awful.key({ modkey, "Control", "Shift" }, "#" .. i + 9,
-                function ()
-                    if client.focus then
-                        local tag = tags[i]
-                        if tag then
-                            awful.client.toggletag(tag)
-                        end
+                        sharedtags.viewtoggle(tag, screen)
                     end
                 end))
     end
     ```
-  4. Lastly, since the tag list is now a one-dimensional array, any references
-     to the `tags` array needs to be changed, for example in the rules section.
+  5. Lastly, any rules referencing the screen and tag should use the newly
+     created `tags` array instead.
 
     ```lua
     awful.rules.rules = {
@@ -100,9 +97,29 @@ Installation
 Notes
 -----
 
-Because of constraints in the X server, *awesome* does not allow
-toggling clients on tags allocated to other screens. Having a client on
-multiple tags and moving one of the tags will cause the client to move as well.
+1. There is a bug in [awesome v4.0](https://github.com/awesomeWM/awesome/pull/1600)
+   which can cause all tags to be deselected when moving a tag to another
+   screen. The following patch can be used to fix the problem.
+   ```diff
+   diff --git a/lib/awful/tag.lua b/lib/awful/tag.lua
+   index 66bd0c1..b481f42 100644
+   --- a/lib/awful/tag.lua
+   +++ b/lib/awful/tag.lua
+   @@ -475,7 +475,7 @@ end
+    function tag.object.set_screen(t, s)
+    
+        s = get_screen(s or ascreen.focused())
+   -    local sel = tag.selected
+   +    local sel = t.selected
+        local old_screen = get_screen(tag.getproperty(t, "screen"))
+    
+        if s == old_screen then return end
+   ```
+   The file is located under `/usr/share/awesome/lib/awful/tag.lua` on my
+   system.
+2. Because of constraints in the X server, *awesome* does not allow
+   toggling clients on tags allocated to other screens. Having a client on
+   multiple tags and moving one of the tags will cause the client to move as well.
 
 API
 ---

@@ -1,12 +1,12 @@
 This patch adds the necessary changes to create and manage tags shareable on
-all screens when using the awesome window manager.
+all screens when using the awesome window manager version 4.0.
 
 The library and all relevant documentation can be found at
 https://github.com/Drauthius/awesome-sharedtags
 
 --- orig/rc.lua	2016-01-01 13:45:26.000000000 +0100
 +++ sharedtags/rc.lua	2016-01-05 20:09:21.428836239 +0100
-@@ -36,6 +36,11 @@
+@@ -36,6 +36,10 @@
  end
  -- }}}
  
@@ -14,82 +14,72 @@ https://github.com/Drauthius/awesome-sharedtags
 +local sharedtags = require("sharedtags")
 +-- }}}
 +
-+
  -- {{{ Variable definitions
  -- Themes define colours, icons, font and wallpapers.
- beautiful.init("/usr/share/awesome/themes/default/theme.lua")
-@@ -79,12 +84,16 @@
+ beautiful.init(awful.util.get_themes_dir() .. "default/theme.lua")
+@@ -88,6 +94,18 @@
+ end
  -- }}}
  
- -- {{{ Tags
---- Define a tag table which hold all screen tags.
--tags = {}
--for s = 1, screen.count() do
--    -- Each screen has its own tag table.
--    tags[s] = awful.tag({ 1, 2, 3, 4, 5, 6, 7, 8, 9 }, s, layouts[1])
--end
-+-- Define a tag table shared among all screens.
++-- {{{ Tags
 +local tags = sharedtags({
-+    { name = "main", layout = layouts[2] },
-+    { name = "www", layout = layouts[10] },
-+    { name = "chat", screen = 2, layout = layouts[1] },
-+    { name = "game", layout = layouts[1] },
-+    { layout = layouts[2] },
-+    { layout = layouts[2] },
-+    { screen = 2, layout = layouts[2] }
++    { name = "main", layout = awful.layout.layouts[2] },
++    { name = "www", layout = awful.layout.layouts[10] },
++    { name = "game", layout = awful.layout.layouts[1] },
++    { name = "misc", layout = awful.layout.layouts[2] },
++    { name = "chat", screen = 2, layout = awful.layout.layouts[2] },
++    { layout = awful.layout.layouts[2] },
++    { screen = 2, layout = awful.layout.layouts[2] }
 +})
- -- }}}
- 
++-- }}}
++
  -- {{{ Menu
-@@ -302,26 +311,24 @@
-         -- View tag only.
+ -- Create a launcher widget and a main menu
+ myawesomemenu = {
+@@ -179,8 +197,9 @@
+     -- Wallpaper
+     set_wallpaper(s)
+ 
+-    -- Each screen has its own tag table.
+-    awful.tag({ "1", "2", "3", "4", "5", "6", "7", "8", "9" }, s, awful.layout.layouts[1])
++    -- Assign tags to the newly connected screen here,
++    -- if desired:
++    --sharedtags.viewonly(tags[4], s)
+ 
+     -- Create a promptbox for each screen
+     s.mypromptbox = awful.widget.prompt()
+@@ -372,9 +402,9 @@
          awful.key({ modkey }, "#" .. i + 9,
                    function ()
--                        local screen = mouse.screen
--                        local tag = awful.tag.gettags(screen)[i]
+                         local screen = awful.screen.focused()
+-                        local tag = screen.tags[i]
 +                        local tag = tags[i]
                          if tag then
--                           awful.tag.viewonly(tag)
-+                           sharedtags.viewonly(tag)
+-                           tag:view_only()
++                           sharedtags.viewonly(tag, screen)
                          end
-                   end),
-         -- Toggle tag.
+                   end,
+                   {description = "view tag #"..i, group = "tag"}),
+@@ -382,9 +412,9 @@
          awful.key({ modkey, "Control" }, "#" .. i + 9,
                    function ()
--                      local screen = mouse.screen
--                      local tag = awful.tag.gettags(screen)[i]
+                       local screen = awful.screen.focused()
+-                      local tag = screen.tags[i]
 +                      local tag = tags[i]
                        if tag then
 -                         awful.tag.viewtoggle(tag)
-+                         sharedtags.viewtoggle(tag)
++                         sharedtags.viewtoggle(tag, screen)
                        end
-                   end),
-         -- Move client to tag.
-         awful.key({ modkey, "Shift" }, "#" .. i + 9,
-                   function ()
-                       if client.focus then
--                          local tag = awful.tag.gettags(client.focus.screen)[i]
-+                          local tag = tags[i]
-                           if tag then
-                               awful.client.movetotag(tag)
-                           end
-@@ -331,7 +338,7 @@
-         awful.key({ modkey, "Control", "Shift" }, "#" .. i + 9,
-                   function ()
-                       if client.focus then
--                          local tag = awful.tag.gettags(client.focus.screen)[i]
-+                          local tag = tags[i]
-                           if tag then
-                               awful.client.toggletag(tag)
-                           end
-@@ -365,9 +372,9 @@
-       properties = { floating = true } },
-     { rule = { class = "gimp" },
-       properties = { floating = true } },
--    -- Set Firefox to always map on tags number 2 of screen 1.
-+    -- Set Firefox to always map on tag number 2.
+                   end,
+                   {description = "toggle tag #" .. i, group = "tag"}),
+@@ -469,9 +469,9 @@
+       }, properties = { titlebars_enabled = true }
+     },
+ 
+-    -- Set Firefox to always map on the tag named "2" on screen 1.
++    -- Set Firefox to always map on the tag named "2".
      -- { rule = { class = "Firefox" },
--    --   properties = { tag = tags[1][2] } },
+-    --   properties = { screen = 1, tag = "2" } },
 +    --   properties = { tag = tags[2] } }, -- tag = tags["www"] works as well
  }
  -- }}}
