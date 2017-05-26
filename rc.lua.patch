@@ -6,7 +6,7 @@ https://github.com/Drauthius/awesome-sharedtags
 
 --- orig/rc.lua	2016-01-01 13:45:26.000000000 +0100
 +++ sharedtags/rc.lua	2016-01-05 20:09:21.428836239 +0100
-@@ -36,6 +36,10 @@
+@@ -38,6 +38,10 @@
  end
  -- }}}
  
@@ -17,7 +17,7 @@ https://github.com/Drauthius/awesome-sharedtags
  -- {{{ Variable definitions
  -- Themes define colours, icons, font and wallpapers.
  beautiful.init(awful.util.get_themes_dir() .. "default/theme.lua")
-@@ -88,6 +94,18 @@
+@@ -90,6 +94,18 @@
  end
  -- }}}
  
@@ -36,7 +36,7 @@ https://github.com/Drauthius/awesome-sharedtags
  -- {{{ Menu
  -- Create a launcher widget and a main menu
  myawesomemenu = {
-@@ -179,8 +197,9 @@
+@@ -181,8 +197,9 @@
      -- Wallpaper
      set_wallpaper(s)
  
@@ -48,7 +48,7 @@ https://github.com/Drauthius/awesome-sharedtags
  
      -- Create a promptbox for each screen
      s.mypromptbox = awful.widget.prompt()
-@@ -372,9 +402,9 @@
+@@ -386,9 +403,9 @@
          awful.key({ modkey }, "#" .. i + 9,
                    function ()
                          local screen = awful.screen.focused()
@@ -60,7 +60,7 @@ https://github.com/Drauthius/awesome-sharedtags
                          end
                    end,
                    {description = "view tag #"..i, group = "tag"}),
-@@ -382,9 +412,9 @@
+@@ -396,9 +413,9 @@
          awful.key({ modkey, "Control" }, "#" .. i + 9,
                    function ()
                        local screen = awful.screen.focused()
@@ -72,7 +72,25 @@ https://github.com/Drauthius/awesome-sharedtags
                        end
                    end,
                    {description = "toggle tag #" .. i, group = "tag"}),
-@@ -469,9 +469,9 @@
+@@ -406,7 +423,7 @@
+         awful.key({ modkey, "Shift" }, "#" .. i + 9,
+                   function ()
+                       if client.focus then
+-                          local tag = client.focus.screen.tags[i]
++                          local tag = tags[i]
+                           if tag then
+                               client.focus:move_to_tag(tag)
+                           end
+@@ -417,7 +434,7 @@
+         awful.key({ modkey, "Control", "Shift" }, "#" .. i + 9,
+                   function ()
+                       if client.focus then
+-                          local tag = client.focus.screen.tags[i]
++                          local tag = tags[i]
+                           if tag then
+                               client.focus:toggle_tag(tag)
+                           end
+@@ -483,9 +500,9 @@
        }, properties = { titlebars_enabled = true }
      },
  

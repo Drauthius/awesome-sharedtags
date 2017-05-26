@@ -4,7 +4,7 @@ awesome-sharedtags
 A simple implementation for creating tags shared on multiple screens for
 [awesome window manager](http://awesome.naquadah.org/).
 
-This branch of the library is intended to work with *awesome* version 4.0 (and
+This branch of the library is intended to work with *awesome* version 4 (for
 all minor versions), but there are other branches with support for other
 versions.
 
@@ -57,29 +57,54 @@ Installation
     end)
     ```
   4. The code for handling tags and clients needs to be changed to use the
-     library.
+     library and pick the correct tag.
 
     ```lua
     for i = 1, 9 do
-        globalkeys = awful.util.table.join(globalkeys,
+        globalkeys = gears.table.join(globalkeys,
             -- View tag only.
             awful.key({ modkey }, "#" .. i + 9,
-                function ()
-                    local screen = awful.screen.focused()
-                    local tag = tags[i]
-                    if tag then
-                        sharedtags.viewonly(tag, screen)
-                    end
-                end),
-            -- Toggle tag.
+                      function ()
+                            local screen = awful.screen.focused()
+                            local tag = tags[i]
+                            if tag then
+                               sharedtags.viewonly(tag, screen)
+                            end
+                      end,
+                      {description = "view tag #"..i, group = "tag"}),
+            -- Toggle tag display.
             awful.key({ modkey, "Control" }, "#" .. i + 9,
-                function ()
-                    local screen = awful.screen.focused()
-                    local tag = tags[i]
-                    if tag then
-                        sharedtags.viewtoggle(tag, screen)
-                    end
-                end))
+                      function ()
+                          local screen = awful.screen.focused()
+                          local tag = tags[i]
+                          if tag then
+                             sharedtags.viewtoggle(tag, screen)
+                          end
+                      end,
+                      {description = "toggle tag #" .. i, group = "tag"}),
+            -- Move client to tag.
+            awful.key({ modkey, "Shift" }, "#" .. i + 9,
+                      function ()
+                          if client.focus then
+                              local tag = tags[i]
+                              if tag then
+                                  client.focus:move_to_tag(tag)
+                              end
+                         end
+                      end,
+                      {description = "move focused client to tag #"..i, group = "tag"}),
+            -- Toggle tag on focused client.
+            awful.key({ modkey, "Control", "Shift" }, "#" .. i + 9,
+                      function ()
+                          if client.focus then
+                              local tag = tags[i]
+                              if tag then
+                                  client.focus:toggle_tag(tag)
+                              end
+                          end
+                      end,
+                      {description = "toggle focused client on tag #" .. i, group = "tag"})
+        )
     end
     ```
   5. Lastly, any rules referencing the screen and tag should use the newly
