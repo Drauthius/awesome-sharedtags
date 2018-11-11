@@ -39,34 +39,19 @@ local sharedtags = {
     ]]
 }
 
--- Add a signal for each new screen, which just listens for the remove
--- event, and moves over all tags when it happens.
-awful.screen.connect_for_each_screen(function(s)
-    -- When the screen is removed, all tags need to be moved over to an existing
-    -- screen. If they are not, accessing the tags will result in an error. It
-    -- doesn't make sense to fix the error, since clients on the now-hidden tags
-    -- will automatically be moved to a tag on a visible screen.
-    s:connect_signal("removed",function()
-        -- The screen to move the orphaned tags to.
-        local newscreen = capi.screen.primary
-        -- The currently selected tags on that screen.
-        local seltags = newscreen.selected_tags
+--- Attempts to salvage a tag when a screen is removed.
+-- @param tag The tag to salvage.
+local function salvage(tag)
+    -- The screen to move the orphaned tag to.
+    local newscreen = capi.screen.primary
 
-        -- Move over all tags to an existing screen.
-        for _,tag in ipairs(s.tags) do
-            sharedtags.movetag(tag, newscreen)
-        end
+    -- Make sure the tag isn't selected when moved to the new screen.
+    tag.selected = false
 
-        -- Restore the viewed tags on the new screen.
-        for i,tag in ipairs(seltags) do
-            if i == 1 then
-                tag:view_only()
-            else
-                awful.tag.viewtoggle(tag)
-            end
-        end
-    end)
-end)
+    sharedtags.movetag(tag, newscreen)
+
+    capi.screen[newscreen]:emit_signal("tag::history::update")
+end
 
 --- Create new tag objects.
 -- The first tag defined for each screen will be automatically selected.
@@ -106,6 +91,9 @@ function sharedtags.new(def)
         if not tags[i].screen.selected_tag then
             tags[i]:view_only() -- Updates the history as well.
         end
+
+        -- Make sure to salvage the tag in case the screen disappears.
+        tags[i]:connect_signal("request::screen", salvage)
     end
 
     return tags
@@ -134,10 +122,6 @@ function sharedtags.movetag(tag, screen)
                     newtag:view_only()
                 end
             end
-        --else
-            -- NOTE: A bug in awesome 4.0 is causing all tags to be deselected
-            -- here. A shame, but I haven't found a nice way to work around it
-            -- except by fixing the bug (history seems to be in a weird state).
         end
 
         -- Also sort the tag in the taglist, by reapplying the index. This is just a nicety.
