@@ -59,11 +59,10 @@ end
 -- @tparam table t The tag definition table for awful.tag.add
 -- @treturn table The created tag.
 function sharedtags.add(i, t)
-   local tag = awful.tag.add(t.name or i, {
-                              screen = (t.screen and t.screen <= capi.screen.count()) and t.screen or capi.screen.primary,
-                              layout = t.layout,
-                              sharedtagindex = i
-   })
+   t = awful.util.table.clone(t, false) -- shallow copy for modification
+   t.screen = (t.screen and t.screen <= capi.screen.count()) and t.screen or capi.screen.primary
+   t.sharedtagindex = i
+   local tag = awful.tag.add(t.name or i, t)
 
    -- If no tag is selected for this screen, then select this one.
    if not tag.screen.selected_tag then
