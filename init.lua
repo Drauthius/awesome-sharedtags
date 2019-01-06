@@ -53,6 +53,29 @@ local function salvage(tag)
     capi.screen[newscreen]:emit_signal("tag::history::update")
 end
 
+--- Create one new tag with sharedtags metadata.
+-- This is mostly useful for setups with dynamic tag adding.
+-- @tparam number i The tag (global/shared) index
+-- @tparam table t The tag definition table for awful.tag.add
+-- @treturn table The created tag.
+function sharedtags.add(i, t)
+   local tag = awful.tag.add(t.name or i, {
+                              screen = (t.screen and t.screen <= capi.screen.count()) and t.screen or capi.screen.primary,
+                              layout = t.layout,
+                              sharedtagindex = i
+   })
+
+   -- If no tag is selected for this screen, then select this one.
+   if not tag.screen.selected_tag then
+      tag:view_only() -- Updates the history as well.
+   end
+
+   -- Make sure to salvage the tag in case the screen disappears.
+   tag:connect_signal("request::screen", salvage)
+
+   return tag
+end
+
 --- Create new tag objects.
 -- The first tag defined for each screen will be automatically selected.
 -- @tparam table def A list of tables with the optional keys `name`, `layout`
@@ -76,24 +99,12 @@ function sharedtags.new(def)
     local tags = {}
 
     for i,t in ipairs(def) do
-        tags[i] = awful.tag.add(t.name or i, {
-            screen = (t.screen and t.screen <= capi.screen.count()) and t.screen or capi.screen.primary,
-            layout = t.layout,
-            sharedtagindex = i
-        })
+        tags[i] = sharedtags.add(i, t)
 
         -- Create an alias between the index and the name.
         if t.name and type(t.name) ~= "number" then
             tags[t.name] = tags[i]
         end
-
-        -- If no tag is selected for this screen, then select this one.
-        if not tags[i].screen.selected_tag then
-            tags[i]:view_only() -- Updates the history as well.
-        end
-
-        -- Make sure to salvage the tag in case the screen disappears.
-        tags[i]:connect_signal("request::screen", salvage)
     end
 
     return tags
