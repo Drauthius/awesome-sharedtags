@@ -117,26 +117,31 @@ function sharedtags.movetag(tag, screen)
     screen = screen or awful.screen.focused()
     local oldscreen = tag.screen
 
-    -- If the specified tag is allocated to another screen, we need to move it.
-    if oldscreen ~= screen then
-        local oldsel = oldscreen.selected_tag
-        tag.screen = screen
+    -- If the specified tag is allocated to another screen, we need to move it,
+    -- or if the tag no longer belongs to a screen.
+    if oldscreen ~= screen or not oldscreen then
+        -- Try to find a new tag to show on the previous screen if the currently
+        -- selected tag is the one that was moved away.
+        if oldscreen then
+            local oldsel = oldscreen.selected_tag
+            tag.screen = screen
 
-        if oldsel == tag then
-            -- The tag has been moved away. In most cases the tag history
-            -- function will find the best match, but if we really want we can
-            -- try to find a fallback tag as well.
-            if not oldscreen.selected_tag then
-                local newtag = awful.tag.find_fallback(oldscreen)
-                if newtag then
-                    newtag:view_only()
+            if oldsel == tag then
+                -- The tag has been moved away. In most cases the tag history
+                -- function will find the best match, but if we really want we can
+                -- try to find a fallback tag as well.
+                if not oldscreen.selected_tag then
+                    local newtag = awful.tag.find_fallback(oldscreen)
+                    if newtag then
+                        newtag:view_only()
+                    end
                 end
             end
         end
 
         -- Also sort the tag in the taglist, by reapplying the index. This is just a nicety.
         local unpack = unpack or table.unpack
-        for _,s in ipairs({ screen, oldscreen }) do
+        for _,s in ipairs({ screen, oldscreen or { tags = {} } }) do
             local tags = { unpack(s.tags) } -- Copy
             table.sort(tags, function(a, b) return a.sharedtagindex < b.sharedtagindex end)
             for i,t in ipairs(tags) do
