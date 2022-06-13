@@ -62,10 +62,6 @@ function salvage(tag)
     return newscreen
 end
 
--- function sharedtags.salvage(tag)
---     return salvage(tag)
--- end
-
 
 --- Create one new tag with sharedtags metadata.
 -- This is mostly useful for setups with dynamic tag adding.
