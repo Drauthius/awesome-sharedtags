@@ -41,7 +41,7 @@ local sharedtags = {
 
 --- Attempts to salvage a tag when a screen is removed.
 -- @param tag The tag to salvage.
-local function salvage(tag)
+function salvage(tag)
     -- The screen to move the orphaned tag to.
     local newscreen = capi.screen.primary
     -- the primary screen may be the one that is being
@@ -58,7 +58,14 @@ local function salvage(tag)
     sharedtags.movetag(tag, newscreen)
 
     capi.screen[newscreen]:emit_signal("tag::history::update")
+
+    return newscreen
 end
+
+-- function sharedtags.salvage(tag)
+--     return salvage(tag)
+-- end
+
 
 --- Create one new tag with sharedtags metadata.
 -- This is mostly useful for setups with dynamic tag adding.
