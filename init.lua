@@ -170,6 +170,8 @@ function sharedtags.viewonly(tag, screen)
     tag:view_only()
 end
 
+--- Move focus to screen containing tag and view the tag on that screen
+-- @param tag The tag to jump to.
 function sharedtags.jumpto(tag)
     awful.screen.focus(tag.screen)
     tag:view_only()
