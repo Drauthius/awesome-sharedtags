@@ -118,8 +118,8 @@ end
 
 function getidx(tag)
     if tag.sharedtagindex then
-        -- Arbitrarily large number to alway be at the end
-        return tag.sharedtagindex + 10
+        -- Add arbitrarily large number to always be at the end
+        return tag.sharedtagindex + 0
     else
         return tag.index
     end
