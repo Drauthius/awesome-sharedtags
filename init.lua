@@ -60,6 +60,18 @@ local function salvage(tag)
     capi.screen[newscreen]:emit_signal("tag::history::update")
 end
 
+-- Gets an index for ordering tags.
+-- @param tag The tag to get an index for
+-- @return An int representing the tags index in the tag list
+local function getidx(tag)
+    if tag.sharedtagindex then
+        -- Add arbitrarily large number to always be at the end
+        return tag.sharedtagindex + 10
+    else
+        return tag.index
+    end
+end
+
 --- Create one new tag with sharedtags metadata.
 -- This is mostly useful for setups with dynamic tag adding.
 -- @tparam number i The tag (global/shared) index
@@ -114,15 +126,6 @@ function sharedtags.new(def)
     end
 
     return tags
-end
-
-function getidx(tag)
-    if tag.sharedtagindex then
-        -- Add arbitrarily large number to always be at the end
-        return tag.sharedtagindex + 0
-    else
-        return tag.index
-    end
 end
 
 --- Move the specified tag to a new screen, if necessary.
